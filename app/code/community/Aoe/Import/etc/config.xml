@@ -19,4 +19,12 @@
 		</helpers>
 	</global>
 
+	<phpunit>
+		<suite>
+			<modules>
+				<Aoe_Import />
+			</modules>
+		</suite>
+	</phpunit>
+
 </config>
