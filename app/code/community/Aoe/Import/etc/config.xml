@@ -1,0 +1,22 @@
+<?xml version="1.0" ?>
+<config>
+	<modules>
+		<Aoe_Import>
+			<version>0.0.1</version>
+		</Aoe_Import>
+	</modules>
+
+	<global>
+		<models>
+			<aoe_import>
+				<class>Aoe_Import_Model</class>
+			</aoe_import>
+		</models>
+		<helpers>
+			<aoe_import>
+				<class>Aoe_Import_Helper</class>
+			</aoe_import>
+		</helpers>
+	</global>
+
+</config>
