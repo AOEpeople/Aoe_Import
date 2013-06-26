@@ -58,6 +58,15 @@
 					<anycustomoptions>customvalue</anycustomoptions>
 				</options>
 			</dummyProcessor3>
+			<dummyProcessor4><!-- processor identifier -->
+				<class>aoe_import/processor_dummy</class>
+				<pathFilter><![CDATA[+^//a/c+]]></pathFilter><!-- regex on xpath that needs to match the current node -->
+				<nodeType>XMLReader::ELEMENT</nodeType><!-- Optional. Defaults to XMLReader::ELEMENT -->
+				<priority>60</priority><!-- Optional. Defaults to 50. Higher priority will be executed first. -->
+				<options>
+					<anycustomoptions>customvalue</anycustomoptions>
+				</options>
+			</dummyProcessor4>
 		</dummyImportKeyB>
 	</aoe_import>
 

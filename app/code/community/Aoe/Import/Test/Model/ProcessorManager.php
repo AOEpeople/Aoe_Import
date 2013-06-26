@@ -3,30 +3,47 @@
 class Aoe_Import_Test_Model_ProcessorManager extends EcomDev_PHPUnit_Test_Case {
 
 	/**
+	 * @var Aoe_Import_Model_ProcessorManager
+	 */
+	protected $processorManager;
+
+	public function setUp() {
+		$this->processorManager = Mage::getModel('aoe_import/processorManager');
+		$this->processorManager->loadFromConfig();
+	}
+
+	/**
 	 * TODO: the configuration should be a fixture
 	 */
 	public function test_loadDummyConfiguration() {
-		$processorManager = Mage::getModel('aoe_import/processorManager'); /* @var $processorManager Aoe_Import_Model_ProcessorManager */
-		$this->assertInstanceOf('Aoe_Import_Model_ProcessorManager', $processorManager);
 
-		$processorManager->loadFromConfig();
-
-		$configuration = $processorManager->getProcessorConfigurations();
+		$configuration = $this->processorManager->getProcessorConfigurations();
 
 		$this->assertTrue(isset($configuration['dummyImportKeyA']));
 		$this->assertTrue(isset($configuration['dummyImportKeyB']));
 
-		$this->assertTrue(isset($configuration['dummyImportKeyA']['+^//a/a+']));
-		$this->assertTrue(isset($configuration['dummyImportKeyA']['+^//a/b+']));
-		$this->assertTrue(isset($configuration['dummyImportKeyB']['+^//a/c+']));
+		$this->assertTrue(isset($configuration['dummyImportKeyA'][XMLReader::ELEMENT]));
+		$this->assertTrue(isset($configuration['dummyImportKeyB'][XMLReader::ELEMENT]));
 
-		$this->assertTrue(isset($configuration['dummyImportKeyA']['+^//a/a+'][XMLReader::ELEMENT]));
-		$this->assertTrue(isset($configuration['dummyImportKeyA']['+^//a/b+'][XMLReader::ELEMENT]));
-		$this->assertTrue(isset($configuration['dummyImportKeyB']['+^//a/c+'][XMLReader::ELEMENT]));
+		$this->assertTrue(isset($configuration['dummyImportKeyA'][XMLReader::ELEMENT]['+^//a/a+']));
+		$this->assertTrue(isset($configuration['dummyImportKeyA'][XMLReader::ELEMENT]['+^//a/b+']));
+		$this->assertTrue(isset($configuration['dummyImportKeyB'][XMLReader::ELEMENT]['+^//a/c+']));
 
-		$this->assertInstanceOf('Mage_Core_Model_Config_Element', $configuration['dummyImportKeyA']['+^//a/a+'][XMLReader::ELEMENT][0]);
-		$this->assertInstanceOf('Mage_Core_Model_Config_Element', $configuration['dummyImportKeyA']['+^//a/b+'][XMLReader::ELEMENT][0]);
-		$this->assertInstanceOf('Mage_Core_Model_Config_Element', $configuration['dummyImportKeyB']['+^//a/c+'][XMLReader::ELEMENT][0]);
+		$this->assertInstanceOf('Mage_Core_Model_Config_Element', $configuration['dummyImportKeyA'][XMLReader::ELEMENT]['+^//a/a+']['dummyProcessor1']);
+		$this->assertInstanceOf('Mage_Core_Model_Config_Element', $configuration['dummyImportKeyA'][XMLReader::ELEMENT]['+^//a/b+']['dummyProcessor2']);
+		$this->assertInstanceOf('Mage_Core_Model_Config_Element', $configuration['dummyImportKeyB'][XMLReader::ELEMENT]['+^//a/c+']['dummyProcessor3']);
+	}
+
+	public function test_findConfiguration() {
+		$processors = $this->processorManager->findProcessors('dummyImportKeyA', '//a/a', XMLReader::ELEMENT);
+		$this->assertEquals(1, count($processors));
+		$this->assertEquals('dummyProcessor1', reset($processors));
+	}
+
+	public function test_checkPriority() {
+		$processors = $this->processorManager->findProcessors('dummyImportKeyB', '//a/c', XMLReader::ELEMENT);
+		$this->assertEquals(2, count($processors));
+		$this->assertEquals(array('dummyProcessor4', 'dummyProcessor3'), $processors);
 	}
 
 
