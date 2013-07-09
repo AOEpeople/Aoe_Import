@@ -37,13 +37,21 @@ class Aoe_Import_Test_Model_ProcessorManager extends EcomDev_PHPUnit_Test_Case {
 	public function test_findConfiguration() {
 		$processors = $this->processorManager->findProcessors('dummyImportKeyA', '//a/a', XMLReader::ELEMENT);
 		$this->assertEquals(1, count($processors));
-		$this->assertEquals('dummyProcessor1', reset($processors));
+		$this->assertEquals('dummyProcessor1', reset(array_keys($processors)));
 	}
 
 	public function test_checkPriority() {
 		$processors = $this->processorManager->findProcessors('dummyImportKeyB', '//a/c', XMLReader::ELEMENT);
 		$this->assertEquals(2, count($processors));
-		$this->assertEquals(array('dummyProcessor4', 'dummyProcessor3'), $processors);
+		$this->assertEquals(array('dummyProcessor4', 'dummyProcessor3'), array_keys($processors));
+	}
+
+	public function test_checkProcessorClassnames() {
+		$processors = $this->processorManager->findProcessors('dummyImportKeyB', '//a/c', XMLReader::ELEMENT);
+		foreach ($processors as $processor) {
+			$this->assertInstanceOf('Aoe_Import_Model_Processor_Interface', $processor);
+			$this->assertInstanceOf('Aoe_Import_Model_Processor_Dummy', $processor);
+		}
 	}
 
 

@@ -1,43 +1,99 @@
 <?php
 
-class Aoe_Import_Model_Processor_Dummy implements Aoe_Import_Model_Processor_Interface {
+/**
+ * Class Aoe_Import_Model_Processor_Dummy
+ *
+ * @author Fabrizio Branca
+ * @since 2013-06-26
+ */
+class Aoe_Import_Model_Processor_Dummy implements Aoe_Import_Model_Processor_Interface
+{
 
-	protected $xmlReader;
+    protected $xmlReader;
 
-	protected $options = array();
+    protected $options = array();
 
-	public function setData($xmlReader) {
-		$this->xmlReader = $xmlReader;
-	}
+    /**
+     * Set data
+     *
+     * @param $xmlReader
+     * @return void
+     */
+    public function setData($xmlReader)
+    {
+        $this->xmlReader = $xmlReader;
+    }
 
-	public function process() {
-		// doing nothing
-	}
+    /**
+     * Process
+     *
+     * @return void
+     */
+    public function process()
+    {
+        // doing nothing
+    }
 
-	public function getSummary() {
-		return 'Summary';
-	}
+    /**
+     * Get summary
+     *
+     * @return string
+     */
+    public function getSummary()
+    {
+        return 'Summary';
+    }
 
-	public function getFinishSummary() {
-		return 'Finish summary';
-	}
+    /**
+     * Get finish summary
+     *
+     * @return string
+     */
+    public function getFinishSummary()
+    {
+        return 'Finish summary';
+    }
 
-	public function reset() {
-		$this->xmlReader = NULL;
-		$this->options = array();
-	}
+    /**
+     * Reset
+     *
+     * @return void
+     */
+    public function reset()
+    {
+        $this->xmlReader = null;
+        $this->options = array();
+    }
 
-	public function setOptions(array $options) {
-		$this->options = $options;
-	}
+    /**
+     * Set options
+     *
+     * @param array $options
+     * @return void
+     */
+    public function setOptions(array $options)
+    {
+        $this->options = $options;
+    }
 
-	public function getName() {
-		return get_class($this);
-	}
+    /**
+     * Get name
+     *
+     * @return string
+     */
+    public function getName()
+    {
+        return get_class($this);
+    }
 
-	public function getOptions() {
-		// TODO: Implement getOptions() method.
-	}
-
+    /**
+     * Get options
+     *
+     * @return void
+     */
+    public function getOptions()
+    {
+        // TODO: Implement getOptions() method.
+    }
 
 }
