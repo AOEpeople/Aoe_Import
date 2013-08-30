@@ -32,6 +32,8 @@ class Aoe_Import_Model_ProcessorManager
     {
 
         if (!isset($this->matchesCache[$importKey][$nodeType][$path])) {
+            $this->matchesCache[$importKey][$nodeType][$path] = array();
+
             $tmp = array();
             foreach ($this->processorConfigurations[$importKey][$nodeType] as $pathFilter => $processorConfigurations) {
                 if (preg_match($pathFilter, $path) > 0) {
@@ -63,9 +65,11 @@ class Aoe_Import_Model_ProcessorManager
             foreach ($importKeyConf->children() as $processorIdentifier => $processorConf) { /* @var $processorConf Mage_Core_Model_Config_Element */
                 $pathFilter = (string)$processorConf->pathFilter;
                 $nodeType = (string)$processorConf->nodeType;
-                $tmp = constant($nodeType);
-                if (!is_null($tmp)) {
-                    $nodeType = $tmp;
+                if (!empty($nodeType)) {
+                    $tmp = constant($nodeType);
+                    if (!is_null($tmp)) {
+                        $nodeType = $tmp;
+                    }
                 }
                 if (empty($nodeType)) {
                     $nodeType = XMLReader::ELEMENT;

@@ -138,6 +138,9 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
                         $this->message(Mage::helper('aoe_import/cliOutput')->getColoredString('EXCEPTION: ' . $e->getMessage(), 'red'));
                     }
 
+                    if (!isset($this->statistics[$path])) {
+                        $this->statistics[$path] = 0;
+                    }
                     $this->statistics[$path]++;
                 }
             }

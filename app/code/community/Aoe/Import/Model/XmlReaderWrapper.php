@@ -118,6 +118,7 @@ class Aoe_Import_Model_XmlReaderWrapper extends XMLReader
     public function getLevelData($key, $level = NULL)
     {
         $requestedLevel = 0;
+        $levelData = null;
 
         if (is_null($level) || $level < 0) {
             $requestedLevel = $this->getStackSize();
@@ -127,7 +128,10 @@ class Aoe_Import_Model_XmlReaderWrapper extends XMLReader
         } elseif ($level > 0) {
             $requestedLevel = $level;
         }
-        return $this->levelData[$requestedLevel][$key];
+        if (isset($this->levelData[$requestedLevel]) && isset($this->levelData[$requestedLevel][$key])) {
+            $levelData = $this->levelData[$requestedLevel][$key];
+        }
+        return $levelData;
     }
 
     /**

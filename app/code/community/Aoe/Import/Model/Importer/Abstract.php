@@ -46,6 +46,16 @@ abstract class Aoe_Import_Model_Importer_Abstract
     protected $endTime;
 
     /**
+     * @var string output buffer
+     */
+    protected $output;
+
+    /**
+     * @var bool
+     */
+    protected $echoOutput = true;
+
+    /**
      * Do the actual import
      *
      * @return void
@@ -162,9 +172,13 @@ abstract class Aoe_Import_Model_Importer_Abstract
     protected function message($message, $lineBreak = true)
     {
         if ($this->verbose) {
-            echo $message;
+            $output = $message;
             if ($message && $lineBreak) {
-                echo "\n";
+                $output .= "\n";
+            }
+            $this->output .= $output;
+            if ($this->echoOutput) {
+                echo $output;
             }
         }
     }
@@ -207,6 +221,14 @@ abstract class Aoe_Import_Model_Importer_Abstract
         $processesPerMinute = (1 / $timePerImport) * 60;
         $summary .= "Processes/Minute: " . intval($processesPerMinute) . "\n";
         return $summary;
+    }
+
+    public function setEchoOutput($echoOutput) {
+        $this->echoOutput = $echoOutput;
+    }
+
+    public function getOutput() {
+        return $this->output;
     }
 
 }
