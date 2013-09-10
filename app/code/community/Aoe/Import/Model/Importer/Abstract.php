@@ -80,6 +80,16 @@ abstract class Aoe_Import_Model_Importer_Abstract
 
         $this->message(sprintf('Importing file "%s"', $this->fileName));
 
+        // This adds the ability to decompress BZIP2 and GZIP files in-stream
+        $extension = pathinfo($this->fileName, PATHINFO_EXTENSION);
+        if ($extension === 'bz2') {
+            $this->message('Using BZIP2 stream decompression');
+            $this->fileName = 'compress.bzip2://' . $this->fileName;
+        } elseif ($extension === 'gz') {
+            $this->message('Using ZLIB stream decompression');
+            $this->fileName = 'compress.zlib://' . $this->fileName;
+        }
+
         $this->_import();
 
         $this->endTime = microtime(true);
