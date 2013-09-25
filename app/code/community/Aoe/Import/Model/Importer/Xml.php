@@ -170,7 +170,7 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
 
         $summary .= "Active processors:\n";
         foreach ($this->getProcessorManager()->getAllUsedProcessors() as $className => $processor) { /* @var $processor Aoe_Import_Model_Processor_Interface */
-            $summary .= "- $className";
+            $summary .= '- ' . get_class($processor);
             $options = $processor->getOptions();
             if (count($options)) {
                 $summary .= ', Options: ' . var_export($options, 1);
@@ -184,7 +184,7 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
         foreach ($this->getProcessorManager()->getAllUsedProcessors() as $className => $processor) { /* @var $processor Aoe_Import_Model_Processor_Interface */
             $processorSummary = $processor->getFinishSummary();
             if (!empty($processorSummary)) {
-                $title = sprintf("Summary of processor \"%s\":\n", $className);
+                $title = sprintf("Summary of processor \"%s\":\n", get_class($processor));
                 $summary .= $title;
                 $summary .= str_repeat('-', strlen($title)) . "\n";
                 $summary .= $processorSummary . "\n\n";
