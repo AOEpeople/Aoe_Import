@@ -56,6 +56,20 @@ abstract class Aoe_Import_Model_Importer_Abstract
     protected $echoOutput = true;
 
     /**
+     * @var string profiler output file path
+     */
+    protected $profilerOutput;
+
+    /**
+     * Set profiler output file path
+     *
+     * @param $profilerOutput
+     */
+    public function setProfilerOutput($profilerOutput) {
+        $this->profilerOutput = $profilerOutput;
+    }
+
+    /**
      * Do the actual import
      *
      * @return void

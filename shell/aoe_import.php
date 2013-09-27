@@ -72,8 +72,15 @@ class Aoe_Import_Shell_Import extends Mage_Shell_Abstract
         if (empty($importKey)) {
             Mage::throwException('No import key given.');
         }
-        
+
         $importer = Mage::getModel('aoe_import/importer_xml'); /* @var $importer Aoe_Import_Model_Importer_Xml */
+
+
+        $profilerPath = $this->getArg('profilerPath');
+        if (!empty($profilerPath)) {
+            $importer->setProfilerOutput($profilerPath);
+        }
+
         foreach ($files as $file) {
             $importer->setFileName($file);
             $importer->setImportKey($importKey);
@@ -89,7 +96,7 @@ class Aoe_Import_Shell_Import extends Mage_Shell_Abstract
      */
     public function importXmlActionHelp()
     {
-        return " -files <files> -importKey <importKey>";
+        return " -files <files> -importKey <importKey> -profilerPath <fileName>";
     }
 
     protected function getInputFiles($files)

@@ -122,6 +122,12 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
                     $this->message(sprintf('[--- Processing %s using processor "%s" (%s) ---]', $xmlReader->getPathWithSiblingCount(), $processorIdentifier, $processorName));
                     // $this->message(sprintf('Stack size: %s, Total sibling count: %s, Sibling count with same name: %s', $xmlReader->getStackSize(), $xmlReader->getSiblingCount(), $xmlReader->getSameNameSiblingCount()));
 
+                    // profiling
+                    if ($this->profilerOutput) {
+                        $startTime = microtime(true);
+                        $startMemory = memory_get_usage();
+                    }
+
                     try {
                         $processor->setData($xmlReader);
 
@@ -138,9 +144,17 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
                         $this->message(Mage::helper('aoe_import/cliOutput')->getColoredString('EXCEPTION: ' . $e->getMessage(), 'red'));
                     }
 
+                    if ($this->profilerOutput) {
+                        $duration = microtime(true) - $startTime;
+                        $memory = memory_get_usage() - $startMemory;
+                        file_put_contents($this->profilerOutput, "$processorName,".round($duration, 4) . ",$memory\n", FILE_APPEND);
+                    }
+
+                    // profiling
                     if (!isset($this->statistics[$path])) {
                         $this->statistics[$path] = 0;
                     }
+                    
                     $this->statistics[$path]++;
                 }
             }
