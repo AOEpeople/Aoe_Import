@@ -1,3 +1,3 @@
 [submodule "lib/Threadi"]
 	path = lib/Threadi
-	url = git@github.com:AOEmedia/Threadi.git
+	url = git://github.com/AOEmedia/Threadi.git
