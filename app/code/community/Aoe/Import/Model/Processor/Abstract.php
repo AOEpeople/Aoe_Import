@@ -56,6 +56,11 @@ abstract class Aoe_Import_Model_Processor_Abstract implements Aoe_Import_Model_P
     protected $pid;
 
     /**
+     * @var string
+     */
+    protected $path;
+
+    /**
      * Constructor
      */
     public function __construct()
@@ -215,6 +220,22 @@ abstract class Aoe_Import_Model_Processor_Abstract implements Aoe_Import_Model_P
                 throw new Exception('Error while writing log to ' . $this->logFilePath);
             }
         }
+    }
+
+    /**
+     * @param string $path
+     */
+    public function setPath($path)
+    {
+        $this->path = $path;
+    }
+
+    /**
+     * @return string
+     */
+    public function getPath()
+    {
+        return $this->path;
     }
 
 }

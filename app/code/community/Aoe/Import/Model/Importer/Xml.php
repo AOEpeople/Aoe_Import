@@ -28,6 +28,14 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
      */
     protected $skipCount = 0;
 
+    protected $threadPoolSize = 1;
+
+    /**
+     * @var int select the highest possible number (to reduce threading overhead) that will successfully process all imports
+     * before hitting the memory limit
+     */
+    protected $processorCollectionSize = 40;
+
     /**
      * @return Aoe_Import_Model_ProcessorManager
      */
@@ -63,6 +71,24 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
     }
 
     /**
+     * @param int $threadPoolSize
+     */
+    public function setThreadPoolSize($threadPoolSize)
+    {
+        $this->threadPoolSize = $threadPoolSize;
+    }
+
+    /**
+     * @param int $processorCollectionSize
+     */
+    public function setProcessorCollectionSize($processorCollectionSize)
+    {
+        $this->processorCollectionSize = $processorCollectionSize;
+    }
+
+
+
+    /**
      * Import
      *
      * @throws Exception
@@ -87,7 +113,11 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
         $this->message('done', true);
 
         $this->message('Initializing thread pool...');
-        $pool = new Threadi_Pool(1);
+        $pool = new Threadi_Pool($this->threadPoolSize);
+
+        $this->message('Initialize processor collection');
+        $processorCollection = Mage::getModel('aoe_import/processorCollection'); /* @var $processorCollection Aoe_Import_Model_ProcessorCollection */
+        $processorCollection->setVerbose($this->getVerbose());
 
         $this->message('Waiting for XMLReader to start...');
         while ($xmlReader->read()) {
@@ -116,6 +146,8 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
             $path = $xmlReader->getPath();
             // $this->message($path);
 
+
+
             if (in_array($xmlReader->nodeType, $nodeTypesWithProcessors)) {
 
                 $processors = $this->getProcessorManager()->findProcessors($this->importKey, $path, $xmlReader->nodeType);
@@ -124,8 +156,7 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
 
                     $processorName = $processor->getName();
 
-                    $this->message(sprintf('[--- Processing %s using processor "%s" (%s) ---]', $xmlReader->getPathWithSiblingCount(), $processorIdentifier, $processorName));
-                    // $this->message(sprintf('Stack size: %s, Total sibling count: %s, Sibling count with same name: %s', $xmlReader->getStackSize(), $xmlReader->getSiblingCount(), $xmlReader->getSameNameSiblingCount()));
+                    $path = $xmlReader->getPathWithSiblingCount();
 
                     // profiling
                     if ($this->profilerOutput) {
@@ -135,21 +166,28 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
 
                     try {
 
-                        Mage::getSingleton('core/resource')->getConnection('core_write')->closeConnection();
+                        if ($processorCollection->count() >= $this->processorCollectionSize) {
+                            $pool->waitTillReady();
+                            $this->message('Starting new thread and adding it to the pool');
 
-                        $pool->waitTillReady();
+                            // create new thread
+                            $thread = new Threadi_Thread_PHPThread(array($processorCollection, 'process'));
+                            $thread->start();
 
+                            // append it to the pool
+                            $pool->add($thread);
+
+                            $processorCollection->reset();
+                        }
+
+
+                        $this->message(sprintf('[--- (Add to collection) Processing %s using processor "%s" (%s) ---]', $path, $processorIdentifier, $processorName));
+                        // $this->message(sprintf('Stack size: %s, Total sibling count: %s, Sibling count with same name: %s', $xmlReader->getStackSize(), $xmlReader->getSiblingCount(), $xmlReader->getSameNameSiblingCount()));
+                        $processor->setPath($path);
                         $processor->setData($xmlReader);
+                        $processorCollection->addProcessor($processor);
 
 
-                        // create new thread
-                        $thread = new Threadi_Thread_PHPThread(array($processor, 'process'));
-                        $thread->start();
-
-                        $this->message('Starting new thread and adding it to the pool');
-
-                        // append it to the pool
-                        $pool->add($thread);
 
                     } catch (Exception $e) {
                         $this->logException($e, $xmlReader->getPathWithSiblingCount());

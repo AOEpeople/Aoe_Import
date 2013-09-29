@@ -2,6 +2,10 @@
 
 interface Aoe_Import_Model_Processor_Interface {
 
+    public function setPath($path);
+
+    public function getPath();
+
 	public function setData($data);
 
 	public function process();

@@ -81,6 +81,16 @@ class Aoe_Import_Shell_Import extends Mage_Shell_Abstract
             $importer->setProfilerOutput($profilerPath);
         }
 
+        $threadPoolSize = $this->getArg('threadPoolSize');
+        if (!empty($threadPoolSize)) {
+            $importer->setThreadPoolSize($threadPoolSize);
+        }
+
+        $processorCollectionSize = $this->getArg('processorCollectionSize');
+        if (!empty($processorCollectionSize)) {
+            $importer->setProcessorCollectionSize($processorCollectionSize);
+        }
+
         foreach ($files as $file) {
             $importer->setFileName($file);
             $importer->setImportKey($importKey);
@@ -96,7 +106,7 @@ class Aoe_Import_Shell_Import extends Mage_Shell_Abstract
      */
     public function importXmlActionHelp()
     {
-        return " -files <files> -importKey <importKey> -profilerPath <fileName>";
+        return " -files <files> -importKey <importKey> -profilerPath <fileName> -threadPoolSize <int> -processorCollectionSize <int>";
     }
 
     protected function getInputFiles($files)
@@ -115,5 +125,12 @@ class Aoe_Import_Shell_Import extends Mage_Shell_Abstract
 
 }
 
+//$_GET['profile'] = true;
+//require_once   '../app/Mage.php';
+//Varien_Profiler::start("wrapper");
+
 $shell = new Aoe_Import_Shell_Import();
 $shell->run();
+
+//Varien_Profiler::stop("wrapper");
+//Mage::helper('aoe_profiler')->renderProfilerOutputToFile();

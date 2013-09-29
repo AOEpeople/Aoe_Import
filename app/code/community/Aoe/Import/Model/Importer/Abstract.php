@@ -186,6 +186,10 @@ abstract class Aoe_Import_Model_Importer_Abstract
         $this->verbose = $verbose;
     }
 
+    public function getVerbose() {
+        return $this->verbose;
+    }
+
     /**
      * Print message
      *
@@ -195,7 +199,7 @@ abstract class Aoe_Import_Model_Importer_Abstract
      */
     protected function message($message, $lineBreak = true)
     {
-        if ($this->verbose) {
+        if ($this->getVerbose()) {
             $output = $message;
             if ($message && $lineBreak) {
                 $output .= "\n";
