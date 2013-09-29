@@ -151,14 +151,6 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
                         // append it to the pool
                         $pool->add($thread);
 
-
-                        $processorReturnValue = $processor->process();
-
-                        // storing the result to levelData
-                        $xmlReader->setLevelData($processorName.'_returnValue', $processorReturnValue);
-
-                        $this->message($processor->getSummary());
-
                     } catch (Exception $e) {
                         $this->logException($e, $xmlReader->getPathWithSiblingCount());
                         $this->message($processor->getSummary());
