@@ -1,3 +1,4 @@
 app/etc/modules/*	app/etc/modules/
 app/code/community/Aoe/Import	app/code/community/Aoe/Import
 shell/* shell/
+lib/Threadi/    lib/Threadi/

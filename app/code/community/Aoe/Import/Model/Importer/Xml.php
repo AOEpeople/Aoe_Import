@@ -70,6 +70,8 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
      */
     protected function _import() {
 
+        require_once Mage::getBaseDir('lib') . '/Threadi/Loader.php';
+
         $xmlReader = Mage::getModel('aoe_import/xmlReaderWrapper'); /* @var $xmlReader Aoe_Import_Model_XmlReaderWrapper */
 
         $this->message('Loading file... ', false);
@@ -83,6 +85,9 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
         }
         $nodeTypesWithProcessors = $this->getProcessorManager()->getRegisteredNodeTypes();
         $this->message('done', true);
+
+        $this->message('Initializing thread pool...');
+        $pool = new Threadi_Pool(1);
 
         $this->message('Waiting for XMLReader to start...');
         while ($xmlReader->read()) {
@@ -129,7 +134,23 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
                     }
 
                     try {
+
+                        Mage::getSingleton('core/resource')->getConnection('core_write')->closeConnection();
+
+                        $pool->waitTillReady();
+
                         $processor->setData($xmlReader);
+
+
+                        // create new thread
+                        $thread = new Threadi_Thread_PHPThread(array($processor, 'process'));
+                        $thread->start();
+
+                        $this->message('Starting new thread and adding it to the pool');
+
+                        // append it to the pool
+                        $pool->add($thread);
+
 
                         $processorReturnValue = $processor->process();
 
@@ -162,6 +183,7 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
             }
 
         }
+        $pool->waitTillAllReady();
         $xmlReader->close();
 
         // process "after" methods
