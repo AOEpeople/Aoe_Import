@@ -125,7 +125,7 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
                     // profiling
                     if ($this->profilerOutput) {
                         $startTime = microtime(true);
-                        $startMemory = memory_get_usage();
+                        $startMemory = memory_get_usage(true);
                     }
 
                     try {
@@ -144,17 +144,19 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
                         $this->message(Mage::helper('aoe_import/cliOutput')->getColoredString('EXCEPTION: ' . $e->getMessage(), 'red'));
                     }
 
+                    // profiling
                     if ($this->profilerOutput) {
-                        $duration = microtime(true) - $startTime;
-                        $memory = memory_get_usage() - $startMemory;
-                        file_put_contents($this->profilerOutput, "$processorName,".round($duration, 4) . ",$memory\n", FILE_APPEND);
+                        $duration = round(microtime(true) - $startTime, 2);
+                        $endMemory = memory_get_usage(true);
+                        $memory = round(($endMemory - $startMemory)/1024, 2); //kb
+                        $endMemory = round($endMemory/(1024*1024), 2); //mb
+                        file_put_contents($this->profilerOutput, "$processorName,$duration,$memory,$endMemory\n", FILE_APPEND);
                     }
 
-                    // profiling
+
                     if (!isset($this->statistics[$path])) {
                         $this->statistics[$path] = 0;
                     }
-                    
                     $this->statistics[$path]++;
                 }
             }
