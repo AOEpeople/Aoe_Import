@@ -65,16 +65,49 @@ class Aoe_Import_Model_ProcessorCollection {
 
         Mage::getSingleton('core/resource')->getConnection('core_write')->closeConnection();
 
+        $i = 1;
+        $count = count($this->processors);
+
         foreach ($this->processors as $processor) { /* @var $processor Aoe_Import_Model_Processor_Interface */
 
-            $this->message(sprintf('[--- Processing %s using processor "%s" ---]', $processor->getPath(), $processor->getName()));
-
             $processor->process();
-            $message = $processor->getSummary();
-            echo $message;
+
+            $this->message(sprintf("[--- (%s/%s) Processed %s using processor '%s' ---]\n%s",
+                $i,
+                $count,
+                $processor->getPath(),
+                $processor->getName(),
+                $processor->getSummary()
+            ));
+
+            $i++;
         }
     }
 
+    /**
+     * Fork process add it to the thread pool and run it
+     *
+     * @param Threadi_Pool $pool
+     */
+    public function forkAndGo(Threadi_Pool $pool) {
+
+        // wait until there's a free slot in the pool
+        $pool->waitTillReady();
+        $this->message('Starting new thread and adding it to the pool');
+
+        // create new thread
+        $thread = new Threadi_Thread_PHPThread(array($this, 'process'));
+        $thread->start();
+
+        // append it to the pool
+        $pool->add($thread);
+
+        $this->reset();
+    }
+
+    /**
+     * Reset collection
+     */
     public function reset() {
         $this->processors = array();
     }

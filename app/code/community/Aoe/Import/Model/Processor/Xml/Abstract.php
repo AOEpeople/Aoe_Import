@@ -4,29 +4,27 @@ abstract class Aoe_Import_Model_Processor_Xml_Abstract extends Aoe_Import_Model_
 {
 
     /**
-     * @var Aoe_Import_Model_XmlReaderWrapper
-     */
-    protected $xmlReader = '';
-
-    /**
      * @var SimpleXMLElement
      */
     protected $xml;
 
     /**
-     * Set XMLReader
+     * Set XML
      *
-     * @param $xmlReader
+     * @param $xml
      * @throws Exception
      * @return void
      */
-    public function setData($xmlReader)
+    public function setData($xml)
     {
-        if (!$xmlReader instanceof Aoe_Import_Model_XmlReaderWrapper) {
+        if (!$xml instanceof SimpleXMLElement) {
             throw new Exception('Wrong class');
         }
-        $this->xmlReader = $xmlReader;
-        $this->xml = new SimpleXMLElement($xmlReader->readOuterXml());
+        $this->xml = $xml;
+    }
+
+    public function getData() {
+        return $this->xml;
     }
 
     /**
@@ -36,9 +34,7 @@ abstract class Aoe_Import_Model_Processor_Xml_Abstract extends Aoe_Import_Model_
      */
     public function reset()
     {
-        $this->xmlReader = NULL;
         $this->xml = NULL;
-        $this->uid = NULL;
         parent::reset();
     }
 

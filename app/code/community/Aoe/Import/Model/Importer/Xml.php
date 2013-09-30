@@ -34,7 +34,7 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
      * @var int select the highest possible number (to reduce threading overhead) that will successfully process all imports
      * before hitting the memory limit
      */
-    protected $processorCollectionSize = 40;
+    protected $processorCollectionSize = 200;
 
     /**
      * @return Aoe_Import_Model_ProcessorManager
@@ -152,11 +152,17 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
 
                 $processors = $this->getProcessorManager()->findProcessors($this->importKey, $path, $xmlReader->nodeType);
 
+                $currentXmlPart = null;
+
                 foreach ($processors as $processorIdentifier => $processor) { /* @var $processor Aoe_Import_Model_Processor_Interface */
+
+                    if (is_null($currentXmlPart)) {
+                        $currentXmlPart = new SimpleXMLElement($xmlReader->readOuterXml());
+                    }
 
                     $processorName = $processor->getName();
 
-                    $path = $xmlReader->getPathWithSiblingCount();
+
 
                     // profiling
                     if ($this->profilerOutput) {
@@ -166,28 +172,21 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
 
                     try {
 
+                        // process to collection
                         if ($processorCollection->count() >= $this->processorCollectionSize) {
-                            $pool->waitTillReady();
-                            $this->message('Starting new thread and adding it to the pool');
-
-                            // create new thread
-                            $thread = new Threadi_Thread_PHPThread(array($processorCollection, 'process'));
-                            $thread->start();
-
-                            // append it to the pool
-                            $pool->add($thread);
-
-                            $processorCollection->reset();
+                            $processorCollection->forkAndGo($pool);
                         }
 
-
+                        // add it to the current collection
+                        $path = $xmlReader->getPathWithSiblingCount();
                         $this->message(sprintf('[--- (Add to collection) Processing %s using processor "%s" (%s) ---]', $path, $processorIdentifier, $processorName));
                         // $this->message(sprintf('Stack size: %s, Total sibling count: %s, Sibling count with same name: %s', $xmlReader->getStackSize(), $xmlReader->getSiblingCount(), $xmlReader->getSameNameSiblingCount()));
-                        $processor->setPath($path);
-                        $processor->setData($xmlReader);
-                        $processorCollection->addProcessor($processor);
 
+                        $processorClone = clone $processor;
 
+                        $processorClone->setPath($path);
+                        $processorClone->setData($currentXmlPart);
+                        $processorCollection->addProcessor($processorClone);
 
                     } catch (Exception $e) {
                         $this->logException($e, $xmlReader->getPathWithSiblingCount());
@@ -211,8 +210,11 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
                     $this->statistics[$path]++;
                 }
             }
-
         }
+
+        // process the remaining items in the collection
+        $processorCollection->forkAndGo($pool);
+
         $pool->waitTillAllReady();
         $xmlReader->close();
 
