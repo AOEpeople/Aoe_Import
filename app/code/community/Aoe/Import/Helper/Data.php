@@ -44,6 +44,37 @@ class Aoe_Import_Helper_Data extends Mage_Core_Helper_Abstract
         }
         return $result;
     }
-   
 
+    public function filterEvents(array $regexPatterns)
+    {
+        $app = Mage::app();
+
+        $reflectedClass = new ReflectionClass($app);
+        $property = $reflectedClass->getProperty('_events');
+        $property->setAccessible(true);
+        $eventAreas = $property->getValue($app);
+        foreach ($eventAreas as $area => $events) {
+            foreach ($events as $eventName => $eventConfig) {
+                foreach($regexPatterns as $regexPattern) {
+                    if(preg_match($regexPattern, $eventName)) {
+                        $events[$eventName] = false;
+                        break;
+                    }
+                }
+            }
+        }
+        $property->setValue($eventAreas);
+
+        foreach(array_keys($eventAreas) as $area) {
+            $eventsNode = $app->getConfig()->getNode($area)->events;
+            foreach($eventsNode as $eventName => $eventNode) {
+                foreach($regexPatterns as $regexPattern) {
+                    if(preg_match($regexPattern, $eventName)) {
+                        unset($eventsNode[$eventName]);
+                        break;
+                    }
+                }
+            }
+        }
+    }
 }
