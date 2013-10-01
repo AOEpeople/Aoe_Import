@@ -63,7 +63,7 @@ class Aoe_Import_Helper_Data extends Mage_Core_Helper_Abstract
                 }
             }
         }
-        $property->setValue($eventAreas);
+        $property->setValue($app, $eventAreas);
 
         foreach(array_keys($eventAreas) as $area) {
             $eventsNode = $app->getConfig()->getNode($area)->events;
