@@ -28,6 +28,11 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
      */
     protected $skipCount = 0;
 
+    /**
+     * Thread pool size
+     *
+     * @var int
+     */
     protected $threadPoolSize = 1;
 
     /**
@@ -154,11 +159,18 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
 
                 $processors = $this->getProcessorManager()->findProcessors($this->importKey, $path, $xmlReader->nodeType);
 
+                // process the collection
+                if ($processorCollection->count() >= $this->processorCollectionSize) {
+                    $processorCollection->forkAndGo($pool);
+                }
+
                 $currentXmlPart = null;
 
                 foreach ($processors as $processorIdentifier => $processor) { /* @var $processor Aoe_Import_Model_Processor_Xml_Abstract */
 
+                    // TODO: these would only need to be set once
                     $processor->setLogFilePath(Mage::getBaseDir('log') . '/' . date('Y-m-d_H-i-s', $this->startTime) . '_' . $processorIdentifier . '.log');
+                    $processor->setProfilerOutput($this->profilerOutput);
 
                     if (is_null($currentXmlPart)) {
                         $currentXmlPart = new SimpleXMLElement($xmlReader->readOuterXml());
@@ -166,50 +178,24 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
 
                     $processorName = $processor->getName();
 
-                    // profiling
-                    if ($this->profilerOutput) {
-                        $startTime = microtime(true);
-                        $startMemory = memory_get_usage(true);
-                    }
+                    // add it to the current collection
+                    $pathWithSiblingCount = $xmlReader->getPathWithSiblingCount();
+                    $this->message(sprintf('[--- (Add to collection #%s) Processing %s using processor "%s" (%s) ---]',
+                        ($processorCollection->getResetCounter() + 1),
+                        $pathWithSiblingCount,
+                        $processorIdentifier,
+                        $processorName
+                    ));
+                    // $this->message(sprintf('Stack size: %s, Total sibling count: %s, Sibling count with same name: %s', $xmlReader->getStackSize(), $xmlReader->getSiblingCount(), $xmlReader->getSameNameSiblingCount()));
 
-                    try {
+                    // cloning processor and add it to the collection
+                    $processorClone = clone $processor;
+                    $processorClone->setPath($pathWithSiblingCount);
+                    $processorClone->setData($currentXmlPart);
+                    $processorCollection->addProcessor($processorClone);
 
-                        // process to collection
-                        if ($processorCollection->count() >= $this->processorCollectionSize) {
-                            $processorCollection->forkAndGo($pool);
-                        }
-
-                        // add it to the current collection
-                        $pathWithSiblingCount = $xmlReader->getPathWithSiblingCount();
-                        $this->message(sprintf('[--- (Add to collection) Processing %s using processor "%s" (%s) ---]', $pathWithSiblingCount, $processorIdentifier, $processorName));
-                        // $this->message(sprintf('Stack size: %s, Total sibling count: %s, Sibling count with same name: %s', $xmlReader->getStackSize(), $xmlReader->getSiblingCount(), $xmlReader->getSameNameSiblingCount()));
-
-                        $processorClone = clone $processor;
-
-                        $processorClone->setPath($pathWithSiblingCount);
-                        $processorClone->setData($currentXmlPart);
-                        $processorCollection->addProcessor($processorClone);
-
-                    } catch (Exception $e) {
-                        $this->logException($e, $xmlReader->getPathWithSiblingCount());
-                        $this->message($processor->getSummary());
-                        $this->message(Mage::helper('aoe_import/cliOutput')->getColoredString('EXCEPTION: ' . $e->getMessage(), 'red'));
-                    }
-
-                    // profiling
-                    if ($this->profilerOutput) {
-                        $duration = round(microtime(true) - $startTime, 2);
-                        $endMemory = memory_get_usage(true);
-                        $memory = round(($endMemory - $startMemory)/1024, 2); //kb
-                        $endMemory = round($endMemory/(1024*1024), 2); //mb
-                        file_put_contents($this->profilerOutput, "$processorName,$duration,$memory,$endMemory\n", FILE_APPEND);
-                    }
-
-
-                    if (!isset($this->statistics[$path])) {
-                        $this->statistics[$path] = 0;
-                    }
-                    $this->statistics[$path]++;
+                    // capture some global statistics
+                    $this->incrementPathCounter($path);
                 }
             }
         }
@@ -235,37 +221,53 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
 
         $summary = '';
 
+        $summary .= "Importer statistics:\n";
+        $summary .= "====================\n";
+
+
         $summary .= "File: {$this->fileName}\n";
         $summary .= "ImportKey: {$this->importKey}\n";
 
         $summary .= "\n";
 
         $summary .= "Active processors:\n";
-        foreach ($this->getProcessorManager()->getAllUsedProcessors() as $className => $processor) { /* @var $processor Aoe_Import_Model_Processor_Interface */
+        $summary .= "------------------\n";
+        foreach ($this->getProcessorManager()->getAllUsedProcessors() as $className => $processor) { /* @var $processor Aoe_Import_Model_Processor_Xml_Abstract */
             $summary .= '- ' . get_class($processor);
-            $options = $processor->getOptions();
-            if (count($options)) {
-                $summary .= ', Options: ' . var_export($options, 1);
-            }
+//            $options = $processor->getOptions();
+//            if (count($options)) {
+//                $summary .= ', Options: ' . var_export($options, 1);
+//            }
             $summary .= "\n";
+            $summary .= "  Detailed log file: " . $processor->getLogFilePath() . "\n";
         }
 
         $summary .= "\n";
 
-        // collect summaries from processors:
-        foreach ($this->getProcessorManager()->getAllUsedProcessors() as $className => $processor) { /* @var $processor Aoe_Import_Model_Processor_Interface */
-            $processorSummary = $processor->getFinishSummary();
-            if (!empty($processorSummary)) {
-                $title = sprintf("Summary of processor \"%s\":\n", get_class($processor));
-                $summary .= $title;
-                $summary .= str_repeat('-', strlen($title)) . "\n";
-                $summary .= $processorSummary . "\n\n";
+        $summary .= "Processed paths:\n";
+        $summary .= "----------------\n";
+        if (count($this->pathCounter)) {
+            foreach ($this->pathCounter as $type => $amount) {
+                $summary .= "- $type: $amount\n";
             }
         }
+        $summary .= "\n";
 
-        $summary .= parent::getImporterSummary();
+
+        $summary .= "Statistics:\n";
+        $summary .= "----------------\n";
+        $total = array_sum($this->pathCounter);
+        $summary .= "Total Processes: " . $total . "\n";
+        $duration = $this->endTime - $this->startTime;
+        $summary .= "Total Duration: " . number_format($duration, 2) . " sec\n";
+        $timePerImport = $duration / $total;
+        $summary .= "Duration/Process: " . number_format($timePerImport, 4) . " sec\n";
+        $processesPerMinute = (1 / $timePerImport) * 60;
+        $summary .= "Processes/Minute: " . intval($processesPerMinute) . "\n";
+        $summary .= "\n";
 
         return $summary;
     }
 
 }
+

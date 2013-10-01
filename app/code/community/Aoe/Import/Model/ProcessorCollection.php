@@ -13,8 +13,14 @@ class Aoe_Import_Model_ProcessorCollection {
      */
     protected $processors = array();
 
+    /**
+     * @var bool
+     */
     protected $verbose = true;
 
+    /**
+     * @var int
+     */
     protected $resetCounter = 0;
 
     /**
@@ -76,8 +82,8 @@ class Aoe_Import_Model_ProcessorCollection {
                 $processor->run();
 
                 // output to the console
-                $this->message(sprintf("(#%s: %s/%s) %s",
-                    ($this->resetCounter + 1),
+                $this->message(sprintf("==> (#%s: %s/%s) %s",
+                    ($this->getResetCounter() + 1),
                     $i,
                     $count,
                     $processor->getSummary()
@@ -98,19 +104,20 @@ class Aoe_Import_Model_ProcessorCollection {
      * @param Threadi_Pool $pool
      */
     public function forkAndGo(Threadi_Pool $pool) {
+        if ($this->count() > 0) {
+            // wait until there's a free slot in the pool
+            $pool->waitTillReady();
+            $this->message('Starting new thread and adding it to the pool');
 
-        // wait until there's a free slot in the pool
-        $pool->waitTillReady();
-        $this->message('Starting new thread and adding it to the pool');
+            // create new thread
+            $thread = new Threadi_Thread_PHPThread(array($this, 'process'));
+            $thread->start();
 
-        // create new thread
-        $thread = new Threadi_Thread_PHPThread(array($this, 'process'));
-        $thread->start();
+            // append it to the pool
+            $pool->add($thread);
 
-        // append it to the pool
-        $pool->add($thread);
-
-        $this->reset();
+            $this->reset();
+        }
     }
 
     /**
@@ -119,6 +126,15 @@ class Aoe_Import_Model_ProcessorCollection {
     public function reset() {
         $this->resetCounter++;
         $this->processors = array();
+    }
+
+    /**
+     * Get reset counter
+     *
+     * @return int
+     */
+    public function getResetCounter() {
+        return $this->resetCounter;
     }
 
     /**

@@ -45,6 +45,11 @@ abstract class Aoe_Import_Model_Processor_Abstract implements Aoe_Import_Model_P
     protected $path;
 
     /**
+     * @var string
+     */
+    protected $profilerOutput;
+
+    /**
      * Constructor
      */
     public function __construct()
@@ -60,6 +65,14 @@ abstract class Aoe_Import_Model_Processor_Abstract implements Aoe_Import_Model_P
             $this->pid,
             $this->getName()
         ), $this->logFilePath);
+    }
+
+    /**
+     * @param string $profilerOutput
+     */
+    public function setProfilerOutput($profilerOutput)
+    {
+        $this->profilerOutput = $profilerOutput;
     }
 
     /**
@@ -81,6 +94,11 @@ abstract class Aoe_Import_Model_Processor_Abstract implements Aoe_Import_Model_P
     public function setLogFilePath($logFilePath)
     {
         $this->logFilePath = $logFilePath;
+    }
+
+    public function getLogFilePath()
+    {
+        return $this->logFilePath;
     }
 
     /**
@@ -122,10 +140,26 @@ abstract class Aoe_Import_Model_Processor_Abstract implements Aoe_Import_Model_P
      */
     public function run()
     {
+
+        // profiling
+        if ($this->profilerOutput) {
+            $startTime = microtime(true);
+            $startMemory = memory_get_usage(true);
+        }
+
         try {
             $this->process();
         } catch (Exception $e) {
             $this->addError($e->getMessage());
+        }
+
+        // profiling
+        if ($this->profilerOutput) {
+            $duration = round(microtime(true) - $startTime, 2);
+            $endMemory = memory_get_usage(true);
+            $memory = round(($endMemory - $startMemory)/1024, 2); //kb
+            $endMemory = round($endMemory/(1024*1024), 2); //mb
+            file_put_contents($this->profilerOutput, "{$this->getName()},$duration,$memory,$endMemory\n", FILE_APPEND);
         }
 
         if ($this->logFilePath) {

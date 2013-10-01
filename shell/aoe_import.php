@@ -97,6 +97,8 @@ class Aoe_Import_Shell_Import extends Mage_Shell_Abstract
             $importer->import();
         }
 
+        echo $importer->getImporterSummary();
+
     }
 
     /**
