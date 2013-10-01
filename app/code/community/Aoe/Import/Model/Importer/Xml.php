@@ -129,6 +129,8 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
                 exit;
             }
 
+            /*
+            // unused leftover from TYPO3 implementation
             if ($this->skippingUntil) {
                 $pathWithSiblingCount = $xmlReader->getPathWithSiblingCount();
                 if ($this->skippingUntil == $pathWithSiblingCount) {
@@ -142,10 +144,10 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
                     continue;
                 }
             }
+            */
 
             $path = $xmlReader->getPath();
             // $this->message($path);
-
 
 
             if (in_array($xmlReader->nodeType, $nodeTypesWithProcessors)) {
@@ -154,15 +156,15 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
 
                 $currentXmlPart = null;
 
-                foreach ($processors as $processorIdentifier => $processor) { /* @var $processor Aoe_Import_Model_Processor_Interface */
+                foreach ($processors as $processorIdentifier => $processor) { /* @var $processor Aoe_Import_Model_Processor_Xml_Abstract */
+
+                    $processor->setLogFilePath(Mage::getBaseDir('log') . '/' . date('Y-m-d_H-i-s', $this->startTime) . '_' . $processorIdentifier . '.log');
 
                     if (is_null($currentXmlPart)) {
                         $currentXmlPart = new SimpleXMLElement($xmlReader->readOuterXml());
                     }
 
                     $processorName = $processor->getName();
-
-
 
                     // profiling
                     if ($this->profilerOutput) {
@@ -178,13 +180,13 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
                         }
 
                         // add it to the current collection
-                        $path = $xmlReader->getPathWithSiblingCount();
-                        $this->message(sprintf('[--- (Add to collection) Processing %s using processor "%s" (%s) ---]', $path, $processorIdentifier, $processorName));
+                        $pathWithSiblingCount = $xmlReader->getPathWithSiblingCount();
+                        $this->message(sprintf('[--- (Add to collection) Processing %s using processor "%s" (%s) ---]', $pathWithSiblingCount, $processorIdentifier, $processorName));
                         // $this->message(sprintf('Stack size: %s, Total sibling count: %s, Sibling count with same name: %s', $xmlReader->getStackSize(), $xmlReader->getSiblingCount(), $xmlReader->getSameNameSiblingCount()));
 
                         $processorClone = clone $processor;
 
-                        $processorClone->setPath($path);
+                        $processorClone->setPath($pathWithSiblingCount);
                         $processorClone->setData($currentXmlPart);
                         $processorCollection->addProcessor($processorClone);
 

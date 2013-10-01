@@ -18,13 +18,9 @@ abstract class Aoe_Import_Model_Processor_Xml_Abstract extends Aoe_Import_Model_
     public function setData($xml)
     {
         if (!$xml instanceof SimpleXMLElement) {
-            throw new Exception('Wrong class');
+            throw new Exception('Given data is of wrong class');
         }
         $this->xml = $xml;
-    }
-
-    public function getData() {
-        return $this->xml;
     }
 
     /**

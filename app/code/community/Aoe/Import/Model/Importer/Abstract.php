@@ -1,9 +1,5 @@
 <?php
 
-if (!defined('SINGLE_QUOTE')) define('SINGLE_QUOTE', "'");
-if (!defined('DOUBLE_QUOTE')) define('DOUBLE_QUOTE', '"');
-if (!defined('TAB')) define('TAB', "\t");
-
 /**
  * Abstract Importer
  */

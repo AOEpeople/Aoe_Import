@@ -139,7 +139,7 @@ class Aoe_Import_Model_ProcessorManager
     {
 
         $processorClassName = (string)$conf->class;
-        $processor = Mage::getModel($processorClassName); /* @var $processor Aoe_Import_Model_Processor_Interface */
+        $processor = Mage::getModel($processorClassName); /* @var $processor Aoe_Import_Model_Processor_Xml_Abstract */
 
         // check if it implements the correct interface
         if (!is_object($processor)) {

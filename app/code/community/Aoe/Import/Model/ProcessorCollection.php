@@ -15,6 +15,8 @@ class Aoe_Import_Model_ProcessorCollection {
 
     protected $verbose = true;
 
+    protected $resetCounter = 0;
+
     /**
      * @param boolean $verbose
      */
@@ -63,22 +65,28 @@ class Aoe_Import_Model_ProcessorCollection {
      */
     public function process() {
 
+        // triggers creating a new MySQL connection for this fork. Otherwise MySQL will fail
         Mage::getSingleton('core/resource')->getConnection('core_write')->closeConnection();
 
         $i = 1;
         $count = count($this->processors);
 
         foreach ($this->processors as $processor) { /* @var $processor Aoe_Import_Model_Processor_Interface */
+            try {
+                $processor->run();
 
-            $processor->process();
-
-            $this->message(sprintf("[--- (%s/%s) Processed %s using processor '%s' ---]\n%s",
-                $i,
-                $count,
-                $processor->getPath(),
-                $processor->getName(),
-                $processor->getSummary()
-            ));
+                // output to the console
+                $this->message(sprintf("(#%s: %s/%s) %s",
+                    ($this->resetCounter + 1),
+                    $i,
+                    $count,
+                    $processor->getSummary()
+                ));
+            } catch (Exception $e) {
+                // we really should never get here because exception should be handled inside the processor
+                $this->message('EXCEPTION: ' . $e->getMessage());
+                Mage::logException($e);
+            }
 
             $i++;
         }
@@ -109,6 +117,7 @@ class Aoe_Import_Model_ProcessorCollection {
      * Reset collection
      */
     public function reset() {
+        $this->resetCounter++;
         $this->processors = array();
     }
 

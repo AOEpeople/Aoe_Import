@@ -3,9 +3,8 @@
 /**
  * Abstract element processor
  *
- * @package TYPO3
- * @subpackage aoe_import
- * @author Fabrizio Branca <fabrizio.branca@aoemedia.de>
+ * @author Fabrizio Branca
+ * @since 2013-08-30
  */
 abstract class Aoe_Import_Model_Processor_Abstract implements Aoe_Import_Model_Processor_Interface
 {
@@ -26,16 +25,6 @@ abstract class Aoe_Import_Model_Processor_Abstract implements Aoe_Import_Model_P
     protected $options = array();
 
     /**
-     * @var array collecting some statistics for the finish summary here
-     */
-    protected $statistics = array();
-
-    /**
-     * @var array collecting messages for the finish summary here
-     */
-    protected $finishSummary = array();
-
-    /**
      * @var bool
      */
     protected $enableLogging = false;
@@ -43,12 +32,7 @@ abstract class Aoe_Import_Model_Processor_Abstract implements Aoe_Import_Model_P
     /**
      * @var string
      */
-    protected $logFilePath = '###LOG_DIR###/aoe_import.###NAME###.###PID###.log';
-
-    /**
-     * @var string
-     */
-    protected $logFormat = "[###TIME###] ###MESSAGE###\n";
+    protected $logFilePath;
 
     /**
      * @var int
@@ -94,6 +78,11 @@ abstract class Aoe_Import_Model_Processor_Abstract implements Aoe_Import_Model_P
         return $this->options;
     }
 
+    public function setLogFilePath($logFilePath)
+    {
+        $this->logFilePath = $logFilePath;
+    }
+
     /**
      * Set data
      *
@@ -116,51 +105,6 @@ abstract class Aoe_Import_Model_Processor_Abstract implements Aoe_Import_Model_P
     }
 
     /**
-     * Get summary
-     *
-     * @return string
-     */
-    public function getSummary()
-    {
-        $message = implode("\n", $this->messages);
-        if (!empty($message)) {
-            $message .= "\n";
-        }
-        $this->messages = array(); // reset messages
-        return $message;
-    }
-
-    /**
-     * Get finish summary.
-     * This is displayed when importing has finished or import has been aborted (CTRL+C)
-     *
-     * @return string
-     */
-    public function getFinishSummary()
-    {
-        $summary = '';
-
-        if (count($this->statistics)) {
-            $summary .= "\n";
-            $summary .= "Processor statistics:\n";
-            $summary .= "=====================\n";
-            foreach ($this->statistics as $status => $value) {
-                $summary .= sprintf("%s: %s\n", $status, $value);
-            }
-        }
-
-        if (count($this->finishSummary)) {
-            $summary .= "\n";
-            $summary .= "Processor finish summary:\n";
-            $summary .= "=========================\n";
-            foreach ($this->finishSummary as $value) {
-                $summary .= "$value\n";
-            }
-        }
-        return $summary;
-    }
-
-    /**
      * Get processor name
      * Overwrite this if you want something else than the classname
      *
@@ -169,6 +113,27 @@ abstract class Aoe_Import_Model_Processor_Abstract implements Aoe_Import_Model_P
     public function getName()
     {
         return get_class($this);
+    }
+
+    /**
+     * Run is a wrapper for the ->process() function. This one will be called from outside
+     *
+     * @return void
+     */
+    public function run()
+    {
+        try {
+            $this->process();
+        } catch (Exception $e) {
+            $this->addError($e->getMessage());
+        }
+
+        if ($this->logFilePath) {
+            $res = file_put_contents($this->logFilePath, $this->getSummary(), FILE_APPEND);
+            if ($res === false) {
+                $this->addWarning('Error while writing log to ' . $this->logFilePath); // for direct output
+            }
+        }
     }
 
     /**
@@ -194,35 +159,6 @@ abstract class Aoe_Import_Model_Processor_Abstract implements Aoe_Import_Model_P
     }
 
     /**
-     * Write message into log file
-     *
-     * @param string $message
-     * @throws Exception
-     * @return void
-     */
-    public function log($message)
-    {
-        if ($this->enableLogging) {
-            $line = str_replace(array(
-                '###PID###',
-                '###TIME###',
-                '###MESSAGE###'
-            ), array(
-                $this->pid,
-                date('YmdHis'),
-                $message
-            ), $this->logFormat);
-            if (empty($this->logFilePath)) {
-                throw new Exception('No logFilePath found!');
-            }
-            $res = file_put_contents($this->logFilePath, $line, FILE_APPEND);
-            if ($res === false) {
-                throw new Exception('Error while writing log to ' . $this->logFilePath);
-            }
-        }
-    }
-
-    /**
      * @param string $path
      */
     public function setPath($path)
@@ -236,6 +172,75 @@ abstract class Aoe_Import_Model_Processor_Abstract implements Aoe_Import_Model_P
     public function getPath()
     {
         return $this->path;
+    }
+
+    /**
+     * Add info
+     *
+     * @param string $message
+     */
+    protected function addInfo($message) {
+        $this->addMessage($message, Zend_Log::INFO);
+    }
+
+    /**
+     * Add warning (import continues)
+     *
+     * @param $message
+     */
+    protected function addWarning($message) {
+        $this->addMessage($message, Zend_Log::WARN);
+    }
+
+    /**
+     * Add error (import stops)
+     *
+     * @param $message
+     */
+    protected function addError($message) {
+        $this->addMessage($message, Zend_Log::ERR);
+    }
+
+    /**
+     * Generic add message
+     *
+     * @param $message
+     * @param $level
+     */
+    protected function addMessage($message, $level) {
+        $this->messages[] = array(
+            'level' => $level,
+            'message' => $message
+        );
+    }
+
+    /**
+     * Get messages as string
+     *
+     * @return string
+     */
+    public function getSummary() {
+        $result = sprintf("[--- Processed %s using processor '%s' ---]\n",
+            $this->getPath(),
+            $this->getName()
+        );
+        foreach ($this->messages as $message) {
+            // for messages in the old format
+            if (!is_array($message)) {
+                $message = array(
+                    'level' => Zend_Log::INFO,
+                    'message' => $message
+                );
+            }
+            switch ($message['level']) {
+                case Zend_Log::INFO: $result .= '[INFO]'; break;
+                case Zend_Log::WARN: $result .= '[WARNING]'; break;
+                case Zend_Log::ERR: $result .= '[ERROR]'; break;
+            }
+            $result .= ' ' . $message['message'] . "\n";
+        }
+        $result .= "\n";
+        return $result;
     }
 
 }

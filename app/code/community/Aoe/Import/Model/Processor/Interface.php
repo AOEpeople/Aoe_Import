@@ -10,9 +10,9 @@ interface Aoe_Import_Model_Processor_Interface {
 
 	public function process();
 
-	public function getSummary();
+    public function run();
 
-	public function getFinishSummary();
+	public function getSummary();
 
 	public function reset();
 
