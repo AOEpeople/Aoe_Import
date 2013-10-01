@@ -180,6 +180,11 @@ abstract class Aoe_Import_Model_Processor_Abstract implements Aoe_Import_Model_P
      * @param string $message
      */
     protected function addInfo($message) {
+        if(func_num_args() > 1) {
+            $args = func_get_args();
+            array_shift($args);
+            $message = vsprintf($message, $args);
+        }
         $this->addMessage($message, Zend_Log::INFO);
     }
 
@@ -189,6 +194,11 @@ abstract class Aoe_Import_Model_Processor_Abstract implements Aoe_Import_Model_P
      * @param $message
      */
     protected function addWarning($message) {
+        if(func_num_args() > 1) {
+            $args = func_get_args();
+            array_shift($args);
+            $message = vsprintf($message, $args);
+        }
         $this->addMessage($message, Zend_Log::WARN);
     }
 
@@ -198,6 +208,11 @@ abstract class Aoe_Import_Model_Processor_Abstract implements Aoe_Import_Model_P
      * @param $message
      */
     protected function addError($message) {
+        if(func_num_args() > 1) {
+            $args = func_get_args();
+            array_shift($args);
+            $message = vsprintf($message, $args);
+        }
         $this->addMessage($message, Zend_Log::ERR);
     }
 
@@ -208,6 +223,12 @@ abstract class Aoe_Import_Model_Processor_Abstract implements Aoe_Import_Model_P
      * @param $level
      */
     protected function addMessage($message, $level) {
+        if(func_num_args() > 2) {
+            $args = func_get_args();
+            array_shift($args);
+            array_shift($args);
+            $message = vsprintf($message, $args);
+        }
         $this->messages[] = array(
             'level' => $level,
             'message' => $message
