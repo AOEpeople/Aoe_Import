@@ -63,42 +63,43 @@ class Aoe_Import_Shell_Import extends Mage_Shell_Abstract
      */
     public function importXmlAction()
     {
-        $files = $this->getInputFiles($this->getArg('files'));
-
-        if (count($files) == 0) {
-            Mage::throwException('No input files found');
+        $threadPoolSize = (int)$this->getArg('threadPoolSize');
+        $threadBatchSize = (int)$this->getArg('threadBatchSize');
+        if ($threadPoolSize || $threadBatchSize) {
+            /* @var $importer Aoe_Import_Model_Importer_Xml_Threaded */
+            $importer = Mage::getModel('aoe_import/importer_xml_threaded');
+            if($threadPoolSize) {
+                $importer->setThreadPoolSize($threadPoolSize);
+            }
+            if($threadBatchSize) {
+                $importer->setThreadBatchSize($threadBatchSize);
+            }
+        } else {
+            /* @var $importer Aoe_Import_Model_Importer_Xml */
+            $importer = Mage::getModel('aoe_import/importer_xml');
         }
-        $importKey = $this->getArg('importKey');
-        if (empty($importKey)) {
-            Mage::throwException('No import key given.');
-        }
-
-        $importer = Mage::getModel('aoe_import/importer_xml'); /* @var $importer Aoe_Import_Model_Importer_Xml */
-
 
         $profilerPath = $this->getArg('profilerPath');
         if (!empty($profilerPath)) {
             $importer->setProfilerOutput($profilerPath);
         }
 
-        $threadPoolSize = $this->getArg('threadPoolSize');
-        if (!empty($threadPoolSize)) {
-            $importer->setThreadPoolSize($threadPoolSize);
+        $importKey = $this->getArg('importKey');
+        if (empty($importKey)) {
+            Mage::throwException('No import key given.');
         }
+        $importer->setImportKey($importKey);
 
-        $processorCollectionSize = $this->getArg('processorCollectionSize');
-        if (!empty($processorCollectionSize)) {
-            $importer->setProcessorCollectionSize($processorCollectionSize);
+        $files = $this->getInputFiles($this->getArg('files'));
+        if (count($files) == 0) {
+            Mage::throwException('No input files found');
         }
-
         foreach ($files as $file) {
             $importer->setFileName($file);
-            $importer->setImportKey($importKey);
             $importer->import();
         }
 
         echo $importer->getImporterSummary();
-
     }
 
     /**
@@ -108,7 +109,7 @@ class Aoe_Import_Shell_Import extends Mage_Shell_Abstract
      */
     public function importXmlActionHelp()
     {
-        return " -files <files> -importKey <importKey> -profilerPath <fileName> -threadPoolSize <int> -processorCollectionSize <int>";
+        return " -importKey <importKey> -files <files> -profilerPath <fileName> -threadPoolSize <int> -threadBatchSize <int>";
     }
 
     /**
