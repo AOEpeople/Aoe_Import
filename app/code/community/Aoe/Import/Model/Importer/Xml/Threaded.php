@@ -70,6 +70,9 @@ class Aoe_Import_Model_Importer_Xml_Threaded extends Aoe_Import_Model_Importer_X
         $this->runBatch();
 
         $this->threadPool->waitTillAllReady();
+
+        // Close existing DB connection to ensure we have a valid db connection resource
+        Mage::getSingleton('core/resource')->getConnection('core_write')->closeConnection();
     }
 
     protected function runBatch()
