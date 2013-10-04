@@ -140,6 +140,7 @@ abstract class Aoe_Import_Model_Processor_Abstract implements Aoe_Import_Model_P
      */
     public function run()
     {
+        $this->messages = array();
 
         // profiling
         if ($this->profilerOutput) {
