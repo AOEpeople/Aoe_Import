@@ -149,7 +149,9 @@ class Aoe_Import_Model_ProcessorManager
         }
 
         // pass options, if set
-        $processor->setOptions((array)$conf->options);
+        if(isset($conf->options)) {
+            $processor->setOptions($conf->options->asArray());
+        }
 
         return $processor;
     }
