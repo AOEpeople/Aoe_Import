@@ -131,8 +131,8 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract
 
     protected function processElement(SimpleXMLElement $element, $importKey, $nodeType, $path, $countedPath, $correlationIdentifier)
     {
-        foreach ($this->getProcessorManager()->findProcessors($importKey, $path, $nodeType) as $processor) {
-            try {
+        try {
+            foreach ($this->getProcessorManager()->findProcessors($importKey, $path, $nodeType) as $processor) {
                 /* @var $processor Aoe_Import_Model_Processor_Xml_Abstract */
                 $processor->setPath($countedPath);
                 $processor->setData($element);
@@ -146,17 +146,17 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract
                         $processor->getSummary()
                     )
                 );
-            } catch (Exception $e) {
-                // we really should never get here because exception should be handled inside the processor
-                $this->message(
-                    sprintf(
-                        "==> (%s) EXCEPTION: %s",
-                        $correlationIdentifier,
-                        $e->getMessage()
-                    )
-                );
-                Mage::logException($e);
             }
+        } catch (Exception $e) {
+            // we really should never get here because exception should be handled inside the processor
+            $this->message(
+                sprintf(
+                    "==> (%s) EXCEPTION: %s",
+                    $correlationIdentifier,
+                    $e->getMessage()
+                )
+            );
+            Mage::logException($e);
         }
     }
 
