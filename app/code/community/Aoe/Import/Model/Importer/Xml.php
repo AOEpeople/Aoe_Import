@@ -213,7 +213,7 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract
         $total = array_sum($this->pathCounter);
         $summary .= "Total Records: " . $total . "\n";
         $duration = $this->endTime - $this->startTime;
-        $summary .= "Total Duration: " . number_format($duration, 2) . " sec\n";
+        $summary .= "Total Duration: " . floor($duration/3600).gmdate(':i:s',$duration) . "\n";
         $timePerImport = $duration / $total;
         $summary .= "Duration/Record: " . number_format($timePerImport, 4) . " sec\n";
         $processesPerMinute = (1 / $timePerImport) * 60;
