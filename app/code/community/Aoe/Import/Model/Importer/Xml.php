@@ -148,13 +148,7 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract
                 );
             }
         } catch (Aoe_Import_Model_Importer_Xml_SkipElementException $e) {
-            $this->message(
-                sprintf(
-                    "==> (%s) %s",
-                    $correlationIdentifier,
-                    $e->getMessage()
-                )
-            );
+            // NOOP
         } catch (Exception $e) {
             // we really should never get here because exception should be handled inside the processor
             $this->message(

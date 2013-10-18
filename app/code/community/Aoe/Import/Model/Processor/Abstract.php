@@ -148,8 +148,13 @@ abstract class Aoe_Import_Model_Processor_Abstract implements Aoe_Import_Model_P
             $startMemory = memory_get_usage(true);
         }
 
+        $skipException = null;
+
         try {
             $this->process();
+        } catch (Aoe_Import_Model_Importer_Xml_SkipElementException $e) {
+            $this->addInfo($e->getMessage());
+            $skipException = $e;
         } catch (Exception $e) {
             $this->addError($e->getMessage());
         }
@@ -168,6 +173,10 @@ abstract class Aoe_Import_Model_Processor_Abstract implements Aoe_Import_Model_P
             if ($res === false) {
                 $this->addWarning('Error while writing log to ' . $this->logFilePath); // for direct output
             }
+        }
+
+        if($skipException) {
+            throw $skipException;
         }
     }
 
