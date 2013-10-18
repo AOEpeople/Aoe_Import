@@ -182,12 +182,20 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract
         $summary .= "ImportKey: {$this->importKey}\n";
         $summary .= "\n";
 
+        $baseUrl = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB);
+        $basePath = rtrim(Mage::getBaseDir(), '/') . '/';
+
         $summary .= "Active processors:\n";
         $summary .= "------------------\n";
         foreach ($this->getProcessorManager()->getAllUsedProcessors() as $processor) {
             /* @var $processor Aoe_Import_Model_Processor_Xml_Abstract */
+            $logFile = $processor->getLogFilePath();
             $summary .= '- ' . get_class($processor) . "\n";
-            $summary .= "  Detailed log file: " . $processor->getLogFilePath() . "\n";
+            $summary .= "  Detailed log file: {$logFile}\n";
+            if(strpos($logFile, $basePath) === 0) {
+                $logUrl = $baseUrl . substr($logFile, strlen($basePath));
+                $summary .= "  Detailed log file URL: {$logUrl}\n";
+            }
         }
         $summary .= "\n";
 
