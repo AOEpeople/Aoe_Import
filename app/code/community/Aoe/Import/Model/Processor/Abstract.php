@@ -125,7 +125,12 @@ abstract class Aoe_Import_Model_Processor_Abstract implements Aoe_Import_Model_P
         try {
             $this->process();
         } catch (Exception $e) {
-            $this->addError($e->getMessage());
+            $message = $e->getMessage();
+            if (empty($message)) {
+                $message = 'No exception message provided';
+            }
+            $message .= ' (' . get_class($e) . ')';
+            $this->addError('EXCEPTION: ' . $message);
         }
 
         if ($this->logFilePath) {
