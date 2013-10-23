@@ -109,6 +109,12 @@ class Aoe_Import_Shell_Import extends Mage_Shell_Abstract
         return " -files <files> -importKey <importKey> -profilerPath <fileName> -threadPoolSize <int> -processorCollectionSize <int>";
     }
 
+    /**
+     * Get input files
+     *
+     * @param $files
+     * @return array
+     */
     protected function getInputFiles($files)
     {
         $inputFiles = array();
@@ -122,6 +128,29 @@ class Aoe_Import_Shell_Import extends Mage_Shell_Abstract
 
         return $inputFiles;
     }
+
+    /**
+     * Show configuration
+     */
+    public function showConfigurationAction() {
+        $helper = Mage::helper('aoe_import');
+        $processorManager = Mage::getModel('aoe_import/processorManager'); /* @var $processorManager Aoe_Import_Model_ProcessorManager */
+        $processorManager->loadFromConfig();
+        foreach ($processorManager->getProcessorConfigurations() as $importKey => $a) {
+            echo "ImportKey: '$importKey':\n";
+            foreach ($a as $nodeType => $b) {
+                foreach ($b as $pathFilter => $c) {
+                    echo "  Path: '$pathFilter' (".$helper->xmlReaderConstantToText($nodeType)."):\n";
+                    foreach ($c as $processorIdentifier => $d) {
+                        echo "    Processor: '$processorIdentifier':\n";
+                    }
+                }
+            }
+            echo "\n";
+        }
+    }
+
+
 
 }
 

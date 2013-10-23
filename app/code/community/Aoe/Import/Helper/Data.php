@@ -77,4 +77,34 @@ class Aoe_Import_Helper_Data extends Mage_Core_Helper_Abstract
             }
         }
     }
+
+    /**
+     * Resturn speaking text for a XmlReader constant
+     *
+     * @param $constant
+     * @return bool
+     */
+    public function xmlReaderConstantToText($constant) {
+        $lookup = array(
+            '0' => 'NONE',
+            '1' => 'ELEMENT',
+            '2' => 'ATTRIBUTE',
+            '3' => 'TEXT',
+            '4' => 'CDATA',
+            '5' => 'ENTITY_REF',
+            '6' => 'ENTITY',
+            '7' => 'PI',
+            '8' => 'COMMENT',
+            '9' => 'DOC',
+            '10' => 'DOC_TYPE',
+            '11' => 'DOC_FRAGMENT',
+            '12' => 'NOTATION',
+            '13' => 'WHITESPACE',
+            '14' => 'SIGNIFICANT_WHITESPACE',
+            '15' => 'END_ELEMENT',
+            '16' => 'END_ENTITY',
+            '17' => 'XML_DECLARATION',
+        );
+        return isset($lookup[$constant]) ? $lookup[$constant] : false;
+    }
 }
