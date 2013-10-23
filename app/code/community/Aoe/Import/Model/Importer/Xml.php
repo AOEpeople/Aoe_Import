@@ -6,8 +6,8 @@
  * @author Fabrizio Branca
  * @since  2013-06-26
  */
-class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
-
+class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract
+{
     /**
      * @var Aoe_Import_Model_ProcessorManager
      */
@@ -28,18 +28,12 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
      */
     protected $skipCount = 0;
 
-    protected $threadPoolSize = 1;
-
-    /**
-     * @var int select the highest possible number (to reduce threading overhead) that will successfully process all imports
-     * before hitting the memory limit
-     */
-    protected $processorCollectionSize = 200;
 
     /**
      * @return Aoe_Import_Model_ProcessorManager
      */
-    public function getProcessorManager() {
+    public function getProcessorManager()
+    {
         if (is_null($this->processorManager)) {
             $this->processorManager = Mage::getSingleton('aoe_import/processorManager');
             $this->processorManager->loadFromConfig();
@@ -52,41 +46,26 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
      *
      * @param $fileName
      */
-    public function setFileName($fileName) {
+    public function setFileName($fileName)
+    {
         $this->fileName = $fileName;
     }
 
     /**
      * @param string $skippingUntil
      */
-    public function setSkippingUntil($skippingUntil) {
+    public function setSkippingUntil($skippingUntil)
+    {
         $this->skippingUntil = $skippingUntil;
     }
 
     /**
-     * @param bool $importKey
+     * @param string $importKey
      */
-    public function setImportKey($importKey) {
+    public function setImportKey($importKey)
+    {
         $this->importKey = $importKey;
     }
-
-    /**
-     * @param int $threadPoolSize
-     */
-    public function setThreadPoolSize($threadPoolSize)
-    {
-        $this->threadPoolSize = $threadPoolSize;
-    }
-
-    /**
-     * @param int $processorCollectionSize
-     */
-    public function setProcessorCollectionSize($processorCollectionSize)
-    {
-        $this->processorCollectionSize = $processorCollectionSize;
-    }
-
-
 
     /**
      * Import
@@ -94,16 +73,20 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
      * @throws Exception
      * @return void
      */
-    protected function _import() {
-
-        require_once Mage::getBaseDir('lib') . '/Threadi/Loader.php';
-
-        $xmlReader = Mage::getModel('aoe_import/xmlReaderWrapper'); /* @var $xmlReader Aoe_Import_Model_XmlReaderWrapper */
+    protected function _import()
+    {
+        $xmlReader = Mage::getModel('aoe_import/xmlReaderWrapper');
+        /* @var $xmlReader Aoe_Import_Model_XmlReaderWrapper */
 
         $this->message('Loading file... ', false);
         $processorReturnValue = $xmlReader->open($this->fileName);
-        if ($processorReturnValue === false) { throw new Exception('Error while opening file in XMLReader'); }
-        $this->message('done', true);
+        if ($processorReturnValue === false) {
+            throw new Exception('Error while opening file in XMLReader');
+        }
+        $this->message('done');
+
+        $this->message('Initialize processor manager');
+        $this->getProcessorManager()->setLogFilePathTemplate(Mage::getBaseDir('log') . '/' . date('Ymd_His', $this->startTime) . '_###IDENTIFIER###.log');
 
         $this->message('Find processors... ', false);
         if ($this->getProcessorManager()->hasProcessorsForImportKey($this->importKey) === false) {
@@ -112,118 +95,76 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
         $nodeTypesWithProcessors = $this->getProcessorManager()->getRegisteredNodeTypes();
         $this->message('done', true);
 
-        $this->message('Initializing thread pool...');
-        $pool = new Threadi_Pool($this->threadPoolSize);
-
-        $this->message('Initialize processor collection');
-        $processorCollection = Mage::getModel('aoe_import/processorCollection'); /* @var $processorCollection Aoe_Import_Model_ProcessorCollection */
-        $processorCollection->setVerbose($this->getVerbose());
-
         $this->message('Waiting for XMLReader to start...');
+        $nodeCount = 1;
         while ($xmlReader->read()) {
-
             if ($this->wasShutDown()) {
                 $this->endTime = microtime(true);
                 $this->message('========================== Aborting... ==========================');
                 $this->message($this->getImporterSummary());
                 exit;
             }
-
-            /*
-            // unused leftover from TYPO3 implementation
-            if ($this->skippingUntil) {
-                $pathWithSiblingCount = $xmlReader->getPathWithSiblingCount();
-                if ($this->skippingUntil == $pathWithSiblingCount) {
-                    // finish skipping elements
-                    $this->skippingUntil = false;
-                } else {
-                    $this->skipCount++;
-                    if ($this->skipCount % 10000 == 0) {
-                        $this->message(sprintf('Skipping... (Current position: %s)', $pathWithSiblingCount));
-                    }
+            if (in_array($xmlReader->nodeType, $nodeTypesWithProcessors)) {
+                $processors = $this->getProcessorManager()->findProcessors($this->importKey, $xmlReader->getPath(), $xmlReader->nodeType);
+                if(count($processors) === 0) {
                     continue;
                 }
-            }
-            */
 
-            $path = $xmlReader->getPath();
-            // $this->message($path);
+                $this->processElement(
+                    new SimpleXMLElement($xmlReader->readOuterXml()),
+                    $this->importKey,
+                    $xmlReader->nodeType,
+                    $xmlReader->getPath(),
+                    $xmlReader->getPathWithSiblingCount(),
+                    $nodeCount++
+                );
 
-
-            if (in_array($xmlReader->nodeType, $nodeTypesWithProcessors)) {
-
-                $processors = $this->getProcessorManager()->findProcessors($this->importKey, $path, $xmlReader->nodeType);
-
-                $currentXmlPart = null;
-
-                foreach ($processors as $processorIdentifier => $processor) { /* @var $processor Aoe_Import_Model_Processor_Xml_Abstract */
-
-                    $processor->setLogFilePath(Mage::getBaseDir('log') . '/' . date('Y-m-d_H-i-s', $this->startTime) . '_' . $processorIdentifier . '.log');
-
-                    if (is_null($currentXmlPart)) {
-                        $currentXmlPart = new SimpleXMLElement($xmlReader->readOuterXml());
-                    }
-
-                    $processorName = $processor->getName();
-
-                    // profiling
-                    if ($this->profilerOutput) {
-                        $startTime = microtime(true);
-                        $startMemory = memory_get_usage(true);
-                    }
-
-                    try {
-
-                        // process to collection
-                        if ($processorCollection->count() >= $this->processorCollectionSize) {
-                            $processorCollection->forkAndGo($pool);
-                        }
-
-                        // add it to the current collection
-                        $pathWithSiblingCount = $xmlReader->getPathWithSiblingCount();
-                        $this->message(sprintf('[--- (Add to collection) Processing %s using processor "%s" (%s) ---]', $pathWithSiblingCount, $processorIdentifier, $processorName));
-                        // $this->message(sprintf('Stack size: %s, Total sibling count: %s, Sibling count with same name: %s', $xmlReader->getStackSize(), $xmlReader->getSiblingCount(), $xmlReader->getSameNameSiblingCount()));
-
-                        $processorClone = clone $processor;
-
-                        $processorClone->setPath($pathWithSiblingCount);
-                        $processorClone->setData($currentXmlPart);
-                        $processorCollection->addProcessor($processorClone);
-
-                    } catch (Exception $e) {
-                        $this->logException($e, $xmlReader->getPathWithSiblingCount());
-                        $this->message($processor->getSummary());
-                        $this->message(Mage::helper('aoe_import/cliOutput')->getColoredString('EXCEPTION: ' . $e->getMessage(), 'red'));
-                    }
-
-                    // profiling
-                    if ($this->profilerOutput) {
-                        $duration = round(microtime(true) - $startTime, 2);
-                        $endMemory = memory_get_usage(true);
-                        $memory = round(($endMemory - $startMemory)/1024, 2); //kb
-                        $endMemory = round($endMemory/(1024*1024), 2); //mb
-                        file_put_contents($this->profilerOutput, "$processorName,$duration,$memory,$endMemory\n", FILE_APPEND);
-                    }
-
-
-                    if (!isset($this->statistics[$path])) {
-                        $this->statistics[$path] = 0;
-                    }
-                    $this->statistics[$path]++;
-                }
+                // capture some global statistics
+                $this->incrementPathCounter($xmlReader->getPath());
             }
         }
 
-        // process the remaining items in the collection
-        $processorCollection->forkAndGo($pool);
+        $this->finishProcessing();
 
-        $pool->waitTillAllReady();
         $xmlReader->close();
+    }
 
-        // process "after" methods
-        // foreach ($this->getProcessorManager()->getAllUsedProcessors() as $className => $processor) { /* @var $processor Aoe_Import_Model_Processor_Interface */
-        //    $processor->after();
-        // }
+    protected function processElement(SimpleXMLElement $element, $importKey, $nodeType, $path, $countedPath, $correlationIdentifier)
+    {
+        try {
+            foreach ($this->getProcessorManager()->findProcessors($importKey, $path, $nodeType) as $processor) {
+                /* @var $processor Aoe_Import_Model_Processor_Xml_Abstract */
+                $processor->setPath($countedPath);
+                $processor->setData($element);
+                $processor->run();
+
+                // output to the console
+                $this->message(
+                    sprintf(
+                        "==> (%s) %s",
+                        $correlationIdentifier,
+                        $processor->getSummary()
+                    )
+                );
+            }
+        } catch (Aoe_Import_Model_Importer_Xml_SkipElementException $e) {
+            // NOOP
+        } catch (Exception $e) {
+            // we really should never get here because exception should be handled inside the processor
+            $this->message(
+                sprintf(
+                    "==> (%s) EXCEPTION: %s",
+                    $correlationIdentifier,
+                    $e->getMessage()
+                )
+            );
+            Mage::logException($e);
+        }
+    }
+
+    protected function finishProcessing()
+    {
+        // NOOP
     }
 
     /**
@@ -231,41 +172,55 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract {
      *
      * @return string
      */
-    public function getImporterSummary() {
-
+    public function getImporterSummary()
+    {
         $summary = '';
 
+        $summary .= "Importer statistics:\n";
+        $summary .= "====================\n";
         $summary .= "File: {$this->fileName}\n";
         $summary .= "ImportKey: {$this->importKey}\n";
-
         $summary .= "\n";
+
+        $baseUrl = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB);
+        $basePath = rtrim(Mage::getBaseDir(), '/') . '/';
 
         $summary .= "Active processors:\n";
-        foreach ($this->getProcessorManager()->getAllUsedProcessors() as $className => $processor) { /* @var $processor Aoe_Import_Model_Processor_Interface */
-            $summary .= '- ' . get_class($processor);
-            $options = $processor->getOptions();
-            if (count($options)) {
-                $summary .= ', Options: ' . var_export($options, 1);
+        $summary .= "------------------\n";
+        foreach ($this->getProcessorManager()->getAllUsedProcessors() as $processor) {
+            /* @var $processor Aoe_Import_Model_Processor_Xml_Abstract */
+            $logFile = $processor->getLogFilePath();
+            $summary .= '- ' . get_class($processor) . "\n";
+            $summary .= "  Detailed log file: {$logFile}\n";
+            if(strpos($logFile, $basePath) === 0) {
+                $logUrl = $baseUrl . substr($logFile, strlen($basePath));
+                $summary .= "  Detailed log file URL: {$logUrl}\n";
             }
-            $summary .= "\n";
         }
-
         $summary .= "\n";
 
-        // collect summaries from processors:
-        foreach ($this->getProcessorManager()->getAllUsedProcessors() as $className => $processor) { /* @var $processor Aoe_Import_Model_Processor_Interface */
-            $processorSummary = $processor->getFinishSummary();
-            if (!empty($processorSummary)) {
-                $title = sprintf("Summary of processor \"%s\":\n", get_class($processor));
-                $summary .= $title;
-                $summary .= str_repeat('-', strlen($title)) . "\n";
-                $summary .= $processorSummary . "\n\n";
+        $summary .= "Processed paths:\n";
+        $summary .= "----------------\n";
+        if (count($this->pathCounter)) {
+            foreach ($this->pathCounter as $type => $amount) {
+                $summary .= "- $type: $amount\n";
             }
         }
+        $summary .= "\n";
 
-        $summary .= parent::getImporterSummary();
+        $summary .= "Statistics:\n";
+        $summary .= "----------------\n";
+        $total = array_sum($this->pathCounter);
+        $summary .= "Total Records: " . $total . "\n";
+        $duration = $this->endTime - $this->startTime;
+        $summary .= "Total Duration: " . floor($duration/3600).gmdate(':i:s',$duration) . "\n";
+        $timePerImport = $duration / $total;
+        $summary .= "Duration/Record: " . number_format($timePerImport, 4) . " sec\n";
+        $processesPerMinute = (1 / $timePerImport) * 60;
+        $summary .= "Records/Minute: " . intval($processesPerMinute) . "\n";
+        $summary .= "\n";
 
         return $summary;
     }
-
 }
+

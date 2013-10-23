@@ -17,11 +17,6 @@ abstract class Aoe_Import_Model_Importer_Abstract
     protected $verbose = true;
 
     /**
-     * @var array exception messages
-     */
-    protected $exceptions = array();
-
-    /**
      * @var bool flag that shows if CTRL+C was pressed
      */
     protected $shutDown = false;
@@ -29,7 +24,7 @@ abstract class Aoe_Import_Model_Importer_Abstract
     /**
      * @var array statistics
      */
-    protected $statistics = array();
+    protected $pathCounter = array();
 
     /**
      * @var float start time
@@ -140,41 +135,6 @@ abstract class Aoe_Import_Model_Importer_Abstract
     }
 
     /**
-     * Log exception
-     *
-     * @param Exception $e
-     * @param string $key
-     * @return void
-     */
-    protected function logException(Exception $e, $key = NULL)
-    {
-        if (!is_null($key)) {
-            $this->exceptions[$key] = $e->getMessage() . "\n" . $e->getTraceAsString() . "\n\n";
-        } else {
-            $this->exceptions[] = $e->getMessage() . "\n" . $e->getTraceAsString() . "\n\n";
-        }
-    }
-
-    /**
-     * Write exceptions to  logfile
-     *
-     * @return string filename
-     */
-    protected function writeExceptionLog()
-    {
-        if (count($this->exceptions) == 0) {
-            return false;
-        }
-        $exceptionLogPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . get_class($this) . '_' . date('Y_m_d_H_i_s') . '.log';
-        $handle = fopen($exceptionLogPath, 'a');
-        foreach ($this->exceptions as $path => $message) {
-            fwrite($handle, $path . ': ' . $message . "\n");
-        }
-        fclose($handle);
-        return $exceptionLogPath;
-    }
-
-    /**
      * @param bool $verbose
      */
     public function setVerbose($verbose)
@@ -214,37 +174,7 @@ abstract class Aoe_Import_Model_Importer_Abstract
      */
     public function getImporterSummary()
     {
-
-        $summary = '';
-
-        $exceptionLogPath = $this->writeExceptionLog();
-
-        $summary .= "Importer statistics:\n";
-        $summary .= "====================\n";
-
-        if (count($this->statistics)) {
-            foreach ($this->statistics as $type => $amount) {
-                $summary .= "  $type: $amount\n";
-            }
-        }
-
-        if ($exceptionLogPath) {
-            $summary .= "\n[!!!] EXCEPTIONS: " . count($this->exceptions) . " (see $exceptionLogPath)\n";
-        } else {
-            $summary .= "\nNo exceptions were thrown.\n";
-        }
-
-        $summary .= "\n";
-
-        $total = array_sum($this->statistics);
-        $summary .= "Total Processes: " . $total . "\n";
-        $duration = $this->endTime - $this->startTime;
-        $summary .= "Total Duration: " . number_format($duration, 2) . " sec\n";
-        $timePerImport = $duration / $total;
-        $summary .= "Duration/Process: " . number_format($timePerImport, 4) . " sec\n";
-        $processesPerMinute = (1 / $timePerImport) * 60;
-        $summary .= "Processes/Minute: " . intval($processesPerMinute) . "\n";
-        return $summary;
+        return '';
     }
 
     public function setEchoOutput($echoOutput) {
@@ -254,5 +184,18 @@ abstract class Aoe_Import_Model_Importer_Abstract
     public function getOutput() {
         return $this->output;
     }
+
+    /**
+     * Increment statistic counter
+     *
+     * @param $type
+     */
+    public function incrementPathCounter($type) {
+        if (!isset($this->pathCounter[$type])) {
+            $this->pathCounter[$type] = 0;
+        }
+        $this->pathCounter[$type]++;
+    }
+
 
 }
