@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This is an example file for the Aoe_Import_Model_Processor_Demo_Product processor -->
+<import>
+    <product>
+        <sku><![CDATA[TEST11111]]></sku>
+        <attribute_set_id>4</attribute_set_id>
+        <type_id>simple</type_id>
+        <name><![CDATA[TEST Product 1]]></name>
+        <description><![CDATA[Description]]></description>
+        <short_description><![CDATA[Short Description]]></short_description>
+        <price>19.99</price>
+        <weight>4</weight>
+        <visibility>4</visibility><!-- check Mage_Catalog_Model_Product_Visibility::VISIBILITY_* -->
+        <status>1</status><!-- check Mage_Catalog_Model_Product_Status::STATUS_* -->
+        <tax_class_id>0</tax_class_id>
+    </product>
+</import>

@@ -98,6 +98,7 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract
         $this->message('Waiting for XMLReader to start...');
         $nodeCount = 1;
         while ($xmlReader->read()) {
+
             if ($this->wasShutDown()) {
                 $this->endTime = microtime(true);
                 $this->message('========================== Aborting... ==========================');
@@ -110,18 +111,31 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract
                     continue;
                 }
 
-                $this->processElement(
-                    new SimpleXMLElement($xmlReader->readOuterXml()),
-                    $this->importKey,
-                    $xmlReader->nodeType,
-                    $xmlReader->getPath(),
-                    $xmlReader->getPathWithSiblingCount(),
-                    $nodeCount++
-                );
+                try {
+
+                    $path = $xmlReader->getPath();
+                    $pathWithSiblingCount = $xmlReader->getPathWithSiblingCount();
+                    $simpleXmlNode = new SimpleXMLElement($xmlReader->readOuterXml());
+
+                    $this->processElement(
+                        $simpleXmlNode,
+                        $this->importKey,
+                        $xmlReader->nodeType,
+                        $path,
+                        $pathWithSiblingCount,
+                        $nodeCount++
+                    );
+
+                } catch (Exception $e) {
+                    $message = "Path: $pathWithSiblingCount\n" . $e->getMessage() . "\n";
+                    echo $message;
+                    file_put_contents(Mage::getBaseDir('log') . '/' . date('Ymd_His', $this->startTime) . '.log', $message);
+                }
 
                 // capture some global statistics
                 $this->incrementPathCounter($xmlReader->getPath());
             }
+
         }
 
         $this->finishProcessing();

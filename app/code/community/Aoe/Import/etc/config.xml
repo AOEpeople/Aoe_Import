@@ -68,6 +68,14 @@
 				</options>
 			</dummyProcessor4>
 		</dummyImportKeyB>
+
+        <example_products><!-- import key -->
+            <exampleProductProcessor><!-- processor identifier -->
+                <class>aoe_import/processor_demo_product</class>
+                <pathFilter><![CDATA[+^//import/product$+]]></pathFilter><!-- regex on xpath that needs to match the current node -->
+            </exampleProductProcessor>
+        </example_products>
+
 	</aoe_import>
 
 

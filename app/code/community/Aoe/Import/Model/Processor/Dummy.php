@@ -6,7 +6,7 @@
  * @author Fabrizio Branca
  * @since 2013-06-26
  */
-class Aoe_Import_Model_Processor_Dummy implements Aoe_Import_Model_Processor_Interface
+class Aoe_Import_Model_Processor_Dummy extends Aoe_Import_Model_Processor_Abstract
 {
 
     protected $xmlReader;
