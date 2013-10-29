@@ -4,6 +4,9 @@
 		<Aoe_Import>
 			<active>true</active>
 			<codePool>community</codePool>
+            <depends>
+                <Aoe_Threadi/>
+            </depends>
 		</Aoe_Import>
 	</modules>
 </config>
