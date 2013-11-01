@@ -83,7 +83,7 @@ class Aoe_Import_Model_Importer_Xml_Threaded extends Aoe_Import_Model_Importer_X
         // create new thread
         $this->threadCounter++;
         $this->message("Starting thread #{$this->threadCounter} and adding it to the pool with " . count($this->elementsData) . " records");
-        $thread = new Threadi_Thread_PHPThread(array($this, 'processBatch'));
+        $thread = Threadi_ThreadFactory::getThread(array($this, 'processBatch'));
         $thread->start();
 
         // append it to the pool
