@@ -162,6 +162,7 @@ abstract class Aoe_Import_Model_Processor_Abstract implements Aoe_Import_Model_P
             }
             $message .= ' (' . get_class($e) . ')';
             $this->addError('EXCEPTION: ' . $message);
+            Mage::logException($e);
         }
 
         // profiling
