@@ -163,6 +163,9 @@ abstract class Aoe_Import_Model_Processor_Abstract implements Aoe_Import_Model_P
             $message .= ' (' . get_class($e) . ')';
             $this->addError('EXCEPTION: ' . $message);
             Mage::logException($e);
+
+            // This will cause the element to stop processing after the first unhandled exception
+            $skipException = new Aoe_Import_Model_Importer_Xml_SkipElementException();
         }
 
         // profiling
