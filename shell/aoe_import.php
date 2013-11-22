@@ -1,6 +1,6 @@
 <?php
 
-require_once 'shell/abstract.php';
+require_once 'abstract.php';
 
 /**
  * Class Aoe_Import_Shell_Import
