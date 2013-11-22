@@ -1,6 +1,6 @@
 <?php
 
-require_once 'abstract.php';
+require_once 'shell/abstract.php';
 
 /**
  * Class Aoe_Import_Shell_Import
@@ -89,6 +89,11 @@ class Aoe_Import_Shell_Import extends Mage_Shell_Abstract
             Mage::throwException('No import key given.');
         }
         $importer->setImportKey($importKey);
+        
+        $showRemainingTime = $this->getArg('remaining');
+        if (!empty($showRemainingTime)) {
+            $importer->setShowRemainingTime($showRemainingTime);
+        }
 
         $files = $this->getInputFiles($this->getArg('files'));
         if (count($files) == 0) {
