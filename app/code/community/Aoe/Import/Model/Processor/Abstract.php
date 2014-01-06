@@ -269,6 +269,18 @@ abstract class Aoe_Import_Model_Processor_Abstract implements Aoe_Import_Model_P
         $this->addMessage($message, Zend_Log::ERR);
     }
 
+    protected function addErrorAndSkip($message)
+    {
+        if(func_num_args() > 1) {
+            $args = func_get_args();
+            array_shift($args);
+            $message = vsprintf($message, $args);
+        }
+        $this->addMessage($message, Zend_Log::ERR);
+
+        throw new Aoe_Import_Model_Importer_Xml_SkipElementException();
+    }
+
     /**
      * Generic add message
      *
