@@ -129,7 +129,7 @@ While traversing this xml file following nodes will be visited:
 
     $ php aoe_import.php
     Available actions:
-        -action importXml -importKey <importKey> -files <files> -profilerPath <fileName> -threadPoolSize <int> -threadBatchSize <int>
+        -action importXml -importKey <importKey> -files <files> -profilerPath <fileName> -threadPoolSize <int> -threadBatchSize <int> -remaining <bool>
         -action showConfiguration
 
 ### Parameters:
@@ -140,6 +140,7 @@ While traversing this xml file following nodes will be visited:
 * profilerPath: path to a log file with some basic profiling information
 * threadPoolSize: number of parallel threads
 * threadBatchSize: number of nodes (not processors!) proceesed in one fork
+* remaining: show estimation of remaining time needed to finish importer
 
 Running the example product importer:
 

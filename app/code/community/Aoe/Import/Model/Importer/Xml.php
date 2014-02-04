@@ -22,6 +22,11 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract
      * @var string|bool path with sibling count
      */
     protected $skippingUntil = false;
+    
+    /**
+     * @var string|bool whether or not to show remaining time
+     */
+    protected $showRemainingTime = false;
 
     /**
      * @var int
@@ -66,6 +71,14 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract
     {
         $this->importKey = $importKey;
     }
+    
+    /**
+     * @param string $showRemainingTime
+     */
+    public function setShowRemainingTime($showRemainingTime)
+    {
+        $this->showRemainingTime = $showRemainingTime;
+    }
 
     /**
      * Import
@@ -75,6 +88,8 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract
      */
     protected function _import()
     {
+        $this->processTimesPerProduct = array();
+        
         $xmlReader = Mage::getModel('aoe_import/xmlReaderWrapper');
         /* @var $xmlReader Aoe_Import_Model_XmlReaderWrapper */
 
@@ -94,6 +109,8 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract
         }
         $nodeTypesWithProcessors = $this->getProcessorManager()->getRegisteredNodeTypes();
         $this->message('done', true);
+        
+        if($this->showRemainingTime) $completeXmlFile = new SimpleXMLElement(file_get_contents($this->fileName));
 
         $this->message('Waiting for XMLReader to start...');
         $nodeCount = 1;
@@ -110,7 +127,8 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract
                 if(count($processors) === 0) {
                     continue;
                 }
-
+        
+                if($this->showRemainingTime) $this->totalElements = count($completeXmlFile->xpath($xmlReader->getPath()));
                 try {
 
                     $path = $xmlReader->getPath();
@@ -147,19 +165,34 @@ class Aoe_Import_Model_Importer_Xml extends Aoe_Import_Model_Importer_Abstract
     {
         try {
             foreach ($this->getProcessorManager()->findProcessors($importKey, $path, $nodeType) as $processor) {
+                
                 /* @var $processor Aoe_Import_Model_Processor_Xml_Abstract */
+                if($this->showRemainingTime) $startTimestamp = microtime(true);
                 $processor->setPath($countedPath);
                 $processor->setData($element);
                 $processor->run();
-
-                // output to the console
-                $this->message(
-                    sprintf(
-                        "==> (%s) %s",
-                        $correlationIdentifier,
-                        $processor->getSummary()
-                    )
-                );
+                if($this->showRemainingTime) {
+                    array_push($this->processTimesPerProduct, ((microtime(true)-$startTimestamp)));
+                    $timeLeft = (array_sum($this->processTimesPerProduct) / count($this->processTimesPerProduct))*($this->totalElements-$correlationIdentifier);
+                
+                    // output to the console
+                    $this->message(
+                        sprintf(
+                            "==> (%s - %s) - %s",
+                            $correlationIdentifier .' / ' . $this->totalElements,
+                            'estimated time left; ' . gmdate("H:i:s", $timeLeft),
+                            $processor->getSummary()
+                        )
+                    );
+                } else {
+                    $this->message(
+                        sprintf(
+                            "==> (%s)  %s",
+                            $correlationIdentifier,
+                            $processor->getSummary()
+                        )
+                    );
+                }
             }
         } catch (Aoe_Import_Model_Importer_Xml_SkipElementException $e) {
             // NOOP
